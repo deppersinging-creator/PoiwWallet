@@ -235,3 +235,22 @@ label.btn { flex-direction: row; color: var(--ink); font-size: 14px; font-weight
   .hello .poi-s .poi { animation: bob 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
   @keyframes bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-3px) rotate(-2deg) } }
 }
+
+/* Points log on the register screen (always light, like the rest of .show) */
+.show .ptsbox { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 8px; text-align: start; }
+.pts-month { font-size: 13px; color: #555; font-variant-numeric: tabular-nums; }
+.pts-form { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.show .pts-form input { background: #fff; color: #111; border-color: #ccc; }
+.pts-hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid #eee; border-radius: 12px; overflow: hidden; }
+.pts-hist:empty { display: none; }
+.pts-hist li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: baseline; padding: 8px 12px; font-size: 14px; }
+.pts-hist li + li { border-top: 1px solid #eee; }
+.pts-hist time { color: #666; font-size: 13px; }
+.pts-hist .d { font-family: var(--f-mono); font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; }
+.pts-hist .d.up { color: #1e7a4a; }
+.pts-hist .d.down { color: #a3241b; }
+.pts-hist .bal { font-family: var(--f-mono); color: #555; font-size: 13px; font-variant-numeric: tabular-nums; direction: ltr; }
+.pts-none { color: #666; font-size: 14px; margin: 0; }
+@media (max-width: 360px) { .pts-form { grid-template-columns: 1fr 1fr; } .pts-form input { grid-column: 1 / -1; } }
+.summary { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 520px) { .summary { grid-template-columns: repeat(2, 1fr); } }
