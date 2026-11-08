@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PoiWallet</title>
+<meta name="description" content="All your point and loyalty cards in one place. Works offline, no account, no tracking.">
+<meta name="theme-color" content="#e8604c">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1 class="logo"><span class="poi-s" data-poi="happy"></span><span data-t="appName">PoiWallet</span></h1>
+    <div class="top-actions">
+      <button class="icon-btn" id="settingsBtn" type="button" data-t-aria="settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Zm7.4-2.5c.1-.3.1-.7.1-1s0-.7-.1-1l2.1-1.6-2-3.5-2.5 1a7.7 7.7 0 0 0-1.7-1L15 3h-4l-.4 2.6c-.6.3-1.2.6-1.7 1l-2.5-1-2 3.5L6.5 11c-.1.3-.1.7-.1 1s0 .7.1 1l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5-2.2-1.9Z"/></svg>
+      </button>
+      <button class="btn primary" id="addBtn" type="button"><span aria-hidden="true">＋</span> <span data-t="add">Add card</span></button>
+    </div>
+  </header>
+
+  <div class="hello"><span class="poi-s" id="helloPoi" data-poi="hi"></span><p class="bubble" id="helloText"></p></div>
+
+  <section class="summary" aria-live="polite">
+    <div><b id="sCount">0</b><span data-t="statCards">Cards</span></div>
+    <div><b id="sPts">0</b><span data-t="statPoints">Total points</span></div>
+    <div><b id="sSoon">0</b><span data-t="statSoon">Expire within 30 days</span></div>
+  </section>
+
+  <div class="banner warn" id="soonBanner" hidden>
+    <span class="poi-s" data-poi="worried"></span>
+    <span id="soonText"></span>
+    <button class="btn small" id="soonBtn" type="button" data-t="soonAction">Show</button>
+  </div>
+  <div class="banner" id="storageBanner" hidden><span data-t="storageWarn"></span></div>
+  <div class="banner note" id="sampleNote" hidden>
+    <span data-t="sampleNote"></span>
+    <button class="btn small ghost" id="clearSample" type="button" data-t="clearSamples">Remove samples</button>
+  </div>
+
+  <div class="tools">
+    <input id="q" type="search" autocomplete="off" data-t-ph="searchPh" aria-label="Search">
+    <label class="sort"><span class="sr" data-t="sortLabel">Sort</span>
+      <select id="sort">
+        <option value="smart" data-t="sortSmart">Most used</option>
+        <option value="expiry" data-t="sortExpiry">Expiring first</option>
+        <option value="points" data-t="sortPoints">Most points</option>
+        <option value="name" data-t="sortName">Name</option>
+      </select>
+    </label>
+  </div>
+  <div class="chips" id="chips" role="tablist"></div>
+
+  <main class="list" id="list" aria-live="polite"></main>
+  <p class="foot" data-t="shortcuts"></p>
+</div>
+
+<!-- Show at the register -->
+<div class="show" id="show" hidden role="dialog" aria-modal="true" aria-labelledby="showName">
+  <div class="show-in">
+    <h2 id="showName"></h2>
+    <div class="code" id="showCode"></div>
+    <button class="num" id="showNum" type="button" data-t-title="copy"></button>
+    <p class="show-sub" id="showSub"></p>
+    <a class="btn primary app-link" id="showApp" href="#" target="_blank" rel="noopener noreferrer" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3ZM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg><span data-t="openApp"></span></a>
+    <a class="link small-link" id="showAppAlt" href="#" target="_blank" rel="noopener noreferrer" data-t="appAlt" hidden></a>
+    <section class="coupons" aria-labelledby="couponsHead">
+      <div class="coupons-head"><h3 id="couponsHead" data-t="coupons"></h3><button class="btn small ghost" id="addCouponBtn" type="button">＋ <span data-t="addCoupon"></span></button></div>
+      <div id="couponList"></div>
+    </section>
+    <p class="hint" data-t="brightHint"></p>
+    <div class="row">
+      <button class="btn ghost" id="showEdit" type="button" data-t="edit">Edit</button>
+      <button class="btn primary" id="showClose" type="button" data-t="done">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add / edit -->
+<div class="sheet" id="sheet" hidden>
+  <form id="form" novalidate role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <h2 id="formTitle"></h2>
+    <label><span data-t="fName"></span><input id="fName" required maxlength="50" autocomplete="off" data-t-ph="fNamePh"></label>
+    <div class="app-row" id="appSuggest" hidden><span id="appSuggestText"></span><button class="btn small primary" id="appAttach" type="button" data-t="appAttach"></button></div>
+    <div class="app-row linked" id="appLinked" hidden><span id="appLinkedText"></span><button class="btn small ghost" id="appUnlink" type="button" data-t="appUnlink"></button></div>
+    <label><span data-t="fNumber"></span><input id="fNum" required maxlength="200" autocomplete="off" spellcheck="false" data-t-ph="fNumberPh"></label>
+    <p class="muted small" data-t="dynamicNote"></p>
+    <div class="stack" id="linkWrap">
+      <label><span data-t="fAppLink"></span><input id="fLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="500" data-t-ph="fAppLinkPh"></label>
+      <p class="muted small" data-t="fAppLinkHint"></p>
+    </div>
+    <div class="scan-row">
+      <button class="btn ghost" id="scanBtn" type="button"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 5a2 2 0 0 1 2-2h3v2H5v3H3V5Zm13-2h3a2 2 0 0 1 2 2v3h-2V5h-3V3ZM3 16h2v3h3v2H5a2 2 0 0 1-2-2v-3Zm16 0h2v3a2 2 0 0 1-2 2h-3v-2h3v-3ZM7 7h2v10H7V7Zm3 0h1v10h-1V7Zm2 0h2v10h-2V7Zm3 0h2v10h-2V7Z"/></svg><span data-t="scanCamera"></span></button>
+      <label class="btn ghost file"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg><span data-t="scanPhoto"></span><input id="fImg" type="file" accept="image/*"></label>
+    </div>
+    <div class="grid2">
+      <label><span data-t="fFormat"></span><select id="fFmt"></select></label>
+      <label><span data-t="fCategory"></span><select id="fCat"></select></label>
+    </div>
+    <div class="grid2">
+      <label><span data-t="fPoints"></span><input id="fPts" type="number" inputmode="decimal" min="0" step="any"></label>
+      <label><span data-t="fExpiry"></span><input id="fExp" type="date"></label>
+    </div>
+    <label><span data-t="fNotes"></span><input id="fNotes" maxlength="120" data-t-ph="fNotesPh"></label>
+    <fieldset class="colors"><legend data-t="fColor"></legend><div class="swatches" id="swatches"></div>
+      <div class="custom-color">
+        <label class="pick"><input type="color" id="fColorPick" value="#c8352b"><span data-t="customColor"></span></label>
+        <label class="rgb"><span data-t="rgbLabel"></span><input id="fRgb" inputmode="numeric" autocomplete="off" placeholder="200, 53, 43"></label>
+      </div>
+    </fieldset>
+    <label class="check"><input id="fFav" type="checkbox"><span data-t="fFavorite"></span></label>
+    <div class="preview" id="preview" aria-hidden="true"></div>
+    <p class="err" id="fErr" role="alert" hidden></p>
+    <div class="actions">
+      <button class="btn danger" id="fDel" type="button" data-t="del" hidden></button>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="fCancel" type="button" data-t="cancel"></button>
+      <button class="btn primary" type="submit" data-t="save"></button>
+    </div>
+  </form>
+</div>
+
+<!-- Coupon add / edit -->
+<div class="sheet" id="couponSheet" hidden>
+  <form id="couponForm" novalidate role="dialog" aria-modal="true" aria-labelledby="couponFormTitle">
+    <h2 id="couponFormTitle"></h2>
+    <label><span data-t="couponTitle"></span><input id="cTitle" required maxlength="60" autocomplete="off" data-t-ph="couponTitlePh"></label>
+    <label><span data-t="couponDetail"></span><input id="cDetail" maxlength="120" autocomplete="off" data-t-ph="couponDetailPh"></label>
+    <div class="grid2">
+      <label><span data-t="fExpiry"></span><input id="cExp" type="date"></label>
+      <label><span data-t="fFormat"></span><select id="cFmt"></select></label>
+    </div>
+    <label><span data-t="couponCode"></span><input id="cCode" maxlength="200" autocomplete="off" spellcheck="false"></label>
+    <p class="err" id="cErr" role="alert" hidden></p>
+    <div class="actions">
+      <button class="btn danger" id="cDel" type="button" hidden></button>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="cCancel" type="button" data-t="cancel"></button>
+      <button class="btn primary" type="submit" data-t="save"></button>
+    </div>
+  </form>
+</div>
+
+<!-- Sign in / create account -->
+<div class="gate" id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <form class="gate-in" id="authForm" novalidate>
+    <span class="poi-s" data-poi="hi"></span>
+    <h1 id="authTitle"></h1>
+    <p class="muted" data-t="tagline"></p>
+    <p class="note-box" id="authInfo" hidden></p>
+    <label id="aEmailRow"><span data-t="email"></span><input id="aEmail" type="email" autocomplete="email" inputmode="email" required></label>
+    <label id="aPwRow"><span id="aPwLabel" data-t="password"></span><input id="aPw" type="password" autocomplete="current-password" required minlength="8"></label>
+    <label id="aPw2Row"><span data-t="passwordConfirm"></span><input id="aPw2" type="password" autocomplete="new-password" minlength="8"></label>
+    <p class="muted small" id="aRule" data-t="passwordRule"></p>
+    <label class="check" id="aShowRow"><input id="aShow" type="checkbox"><span data-t="showPw"></span></label>
+    <p class="err" id="aErr" role="alert" hidden></p>
+    <button class="btn primary wide" id="aSubmit" type="submit"></button>
+    <div class="gate-links">
+      <button class="link" id="aSwitch" type="button"></button>
+      <button class="link" id="aForgot" type="button" data-t="forgotPw"></button>
+      <button class="link" id="aResend" type="button" data-t="resendVerify" hidden></button>
+    </div>
+    <label class="lang-mini"><span class="sr" data-t="language"></span><select id="authLang"></select></label>
+  </form>
+</div>
+
+<!-- Biometric lock -->
+<div class="gate" id="lock" hidden role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+  <div class="gate-in">
+    <span class="poi-s" data-poi="hi"></span>
+    <h1 id="lockTitle" data-t="lockTitle"></h1>
+    <svg class="bio" viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><path fill="currentColor" d="M12 2a9 9 0 0 0-9 9v2h2v-2a7 7 0 0 1 14 0v2a13 13 0 0 1-1.2 5.4l1.8.9A15 15 0 0 0 21 13v-2a9 9 0 0 0-9-9Zm0 4a5 5 0 0 0-5 5v3a10 10 0 0 1-1 4.3l1.8.9A12 12 0 0 0 9 14v-3a3 3 0 0 1 6 0v3a17 17 0 0 1-1.7 7.4l1.8.9A19 19 0 0 0 17 14v-3a5 5 0 0 0-5-5Zm-1 5v3a14 14 0 0 1-2.4 7.9l1.6 1.2A16 16 0 0 0 13 14v-3h-2Z"/></svg>
+    <p class="err" id="lockErr" role="alert" hidden></p>
+    <button class="btn primary wide" id="unlockBtn" type="button" data-t="unlock"></button>
+    <button class="link" id="lockPw" type="button" data-t="usePassword"></button>
+  </div>
+</div>
+
+<!-- Ask to enable biometric unlock -->
+<div class="sheet" id="lockAsk" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="lockAskTitle">
+    <h2 id="lockAskTitle" data-t="lockAsk"></h2>
+    <div class="actions"><span class="spacer"></span><button class="btn ghost" id="lockAskNo" type="button" data-t="notNow"></button><button class="btn primary" id="lockAskYes" type="button" data-t="enable"></button></div>
+  </div>
+</div>
+
+<!-- Camera scanner -->
+<div class="scanner" id="scanner" hidden role="dialog" aria-modal="true" aria-labelledby="scanTitle">
+  <video id="video" playsinline muted></video>
+  <div class="reticle" aria-hidden="true"></div>
+  <div class="scanner-bar">
+    <h2 id="scanTitle" data-t="scanTitle"></h2>
+    <p data-t="scanHint"></p>
+    <button class="btn primary" id="scanClose" type="button" data-t="cancel"></button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="sheet" id="settings" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle" data-t="settings"></h2>
+    <div class="grid2">
+      <label><span data-t="language"></span><select id="langSel"></select></label>
+      <label><span data-t="theme"></span>
+        <select id="themeSel">
+          <option value="system" data-t="themeSystem"></option>
+          <option value="light" data-t="themeLight"></option>
+          <option value="dark" data-t="themeDark"></option>
+        </select>
+      </label>
+    </div>
+    <section id="accountSec" hidden>
+      <h3 data-t="account"></h3>
+      <p class="muted" id="accEmail"></p>
+      <p class="muted small" id="accSync"></p>
+      <label class="check" id="lockRow"><input id="lockToggle" type="checkbox"><span data-t="lockSetting"></span></label>
+      <p class="muted small" id="lockNa" data-t="lockUnavailable" hidden></p>
+      <div class="row-start">
+        <button class="btn ghost" id="signOutBtn" type="button" data-t="signOut"></button>
+        <button class="btn danger" id="delAccBtn" type="button" data-t="deleteAccount"></button>
+      </div>
+    </section>
+    <section id="localLockSec" hidden>
+      <label class="check"><input id="lockToggleLocal" type="checkbox"><span data-t="lockSetting"></span></label>
+    </section>
+    <section>
+      <h3 data-t="backup"></h3>
+      <p class="muted" data-t="backupNote"></p>
+      <div class="row-start">
+        <button class="btn ghost" id="exportBtn" type="button" data-t="exportBtn"></button>
+        <label class="btn ghost file"><span data-t="importBtn"></span><input id="importFile" type="file" accept="application/json,.json"></label>
+      </div>
+    </section>
+    <section id="installSec" hidden>
+      <button class="btn primary" id="installBtn" type="button" data-t="install"></button>
+      <p class="muted" id="installIos" data-t="installIos" hidden></p>
+    </section>
+    <section>
+      <h3 data-t="privacyTitle"></h3>
+      <p class="muted" data-t="privacyBody"></p>
+      <p class="muted" id="privacyCloud" data-t="privacyCloud" hidden></p>
+    </section>
+    <section>
+      <h3 data-t="termsTitle"></h3>
+      <p class="muted" data-t="termsBody"></p>
+    </section>
+    <div class="actions"><span class="spacer"></span><button class="btn primary" id="setClose" type="button" data-t="close"></button></div>
+    <p class="ver">PoiWallet 1.2.0</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"><span id="toastMsg"></span><button class="btn small ghost" id="toastAct" type="button" hidden></button></div>
+
+<script src="vendor/bwip-js.min.js" defer></script>
+<script src="config.js" defer></script>
+<script src="vendor/supabase.min.js" defer></script>
+<script src="mascot.js" defer></script>
+<script src="apps.js" defer></script>
+<script src="i18n.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>
