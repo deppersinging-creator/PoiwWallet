@@ -35,6 +35,7 @@
     <div><b id="sCount">0</b><span data-t="statCards">Cards</span></div>
     <div><b id="sPts">0</b><span data-t="statPoints">Total points</span></div>
     <div><b id="sSoon">0</b><span data-t="statSoon">Expire within 30 days</span></div>
+    <div><b id="sMonth">0</b><span data-t="statMonth">Earned this month</span></div>
   </section>
 
   <div class="banner warn" id="soonBanner" hidden>
@@ -72,6 +73,18 @@
     <div class="code" id="showCode"></div>
     <button class="num" id="showNum" type="button" data-t-title="copy"></button>
     <p class="show-sub" id="showSub"></p>
+    <section class="ptsbox" aria-labelledby="ptsHead">
+      <div class="coupons-head"><h3 id="ptsHead" data-t="ptsTitle"></h3><span class="pts-month" id="ptsMonth"></span></div>
+      <form class="pts-form" id="ptsForm" novalidate>
+        <label class="sr" for="ptsAmt" data-t="ptsAmount"></label>
+        <input id="ptsAmt" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" data-t-ph="ptsAmountPh">
+        <button class="btn small primary" type="submit" data-kind="earn">＋ <span data-t="ptsEarn"></span></button>
+        <button class="btn small ghost" type="submit" data-kind="spend">－ <span data-t="ptsSpend"></span></button>
+      </form>
+      <ol class="pts-hist" id="ptsHist"></ol>
+      <p class="pts-none" id="ptsNone" data-t="ptsNone" hidden></p>
+      <button class="link small-link" id="ptsMore" type="button" hidden></button>
+    </section>
     <a class="btn primary app-link" id="showApp" href="#" target="_blank" rel="noopener noreferrer" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3ZM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg><span data-t="openApp"></span></a>
     <a class="link small-link" id="showAppAlt" href="#" target="_blank" rel="noopener noreferrer" data-t="appAlt" hidden></a>
     <section class="coupons" aria-labelledby="couponsHead">
@@ -255,7 +268,7 @@
       <p class="muted" data-t="termsBody"></p>
     </section>
     <div class="actions"><span class="spacer"></span><button class="btn primary" id="setClose" type="button" data-t="close"></button></div>
-    <p class="ver">PoiWallet 1.2.0</p>
+    <p class="ver">PoiWallet 1.3.0</p>
   </div>
 </div>
 

@@ -1,5 +1,5 @@
 /* PoiWallet service worker: offline-first app shell. Bump VERSION on every release. */
-const VERSION = "poiwallet-1.2.0";
+const VERSION = "poiwallet-1.3.0";
 const SHELL = [
   "./", "index.html", "app.css", "app.js", "i18n.js", "apps.js", "mascot.js", "config.js", "manifest.webmanifest", "vendor/supabase.min.js",
   "vendor/bwip-js.min.js", "vendor/zxing.min.js",

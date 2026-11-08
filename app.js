@@ -1,7 +1,7 @@
-/* PoiWallet 1.2.0 — all data stays in this browser (localStorage). */
+/* PoiWallet 1.3.0 — all data stays in this browser (localStorage). */
 (() => {
   "use strict";
-  const VERSION = "1.2.0";
+  const VERSION = "1.3.0";
   const KEY = "poiwallet.v1";
   const $ = id => document.getElementById(id);
 
@@ -73,6 +73,7 @@
   function samples() {
     return [
       { id: "s1", name: t("ex1"), num: "2900123456785", fmt: "ean13", pts: 1240, exp: isoIn(12), notes: t("exNote1"), cat: "drug", color: COLORS[0], fav: true, used: 6, lastUsed: Date.now() - 864e5, sample: true,
+        hist: [{ at: Date.now() - 864e5, d: 40, bal: 1240 }, { at: Date.now() - 4 * 864e5, d: -300, bal: 1200 }, { at: Date.now() - 9 * 864e5, d: 120, bal: 1500 }],
         coupons: [{ id: "k1", title: "10% OFF", detail: "", exp: isoIn(5), code: "COUPON10", fmt: "code128", used: false }] },
       { id: "s2", name: t("ex2"), num: "BAKERY-00482", fmt: "qrcode", pts: 8, exp: isoIn(95), notes: t("exNote2"), cat: "food", color: COLORS[1], used: 3, lastUsed: Date.now() - 3 * 864e5, sample: true },
       { id: "s3", name: t("ex3"), num: "A12345678B", fmt: "rationalizedCodabar", pts: 560, exp: isoIn(-3), notes: "", cat: "other", color: COLORS[5], used: 1, lastUsed: Date.now() - 20 * 864e5, sample: true },
@@ -104,6 +105,22 @@
     return (0.2126 * L(r) + 0.7152 * L(g) + 0.0722 * L(b)) > 0.4 ? "#141821" : "#ffffff";
   }
   function fmtPts(v) { return nf().format(+v || 0); }
+  const round2 = v => Math.round(v * 100) / 100;
+  const HIST_MAX = 60;
+  function logPoints(c, before, after, kind) {
+    const d = round2(after - before); if (!d) return;
+    c.hist = [{ at: Date.now(), d, bal: after, ...(kind ? { k: kind } : {}) }, ...(c.hist || [])].slice(0, HIST_MAX);
+  }
+  function monthStart() { const d = today(); d.setDate(1); return d.getTime(); }
+  function monthTotals(list) {
+    const from = monthStart(); let plus = 0, minus = 0;
+    for (const c of list) for (const h of c.hist || []) {
+      if (h.at < from || h.k === "edit") continue;
+      if (h.d > 0) plus += h.d; else minus -= h.d;
+    }
+    return { plus: round2(plus), minus: round2(minus) };
+  }
+  const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + fmtPts(Math.abs(v));
 
   // ---------- Barcode rendering ----------
   function codeText(fmt, num) {
@@ -205,7 +222,7 @@
     const greet = t(hr < 11 ? "hiMorning" : hr < 18 ? "hiDay" : "hiEvening");
     const total = all.filter(c => !c.sample).length;
     const coupons = all.reduce((s, c) => s + activeCoupons(c).length, 0);
-    let msg = greet + " " + (total === 0 ? t("poiEmpty") : soon ? t("poiSoon", { n: nf().format(soon) }) : coupons ? t("poiCoupons", { n: nf().format(coupons) }) : t("poiFine"));
+    let msg = greet + " " + (total === 0 ? t("poiEmpty") : soon ? t("poiSoon", { n: nf().format(soon) }) : coupons ? t("poiCoupons", { n: nf().format(coupons) }) : monthTotals(all).plus > 0 ? t("poiMonth", { n: fmtPts(monthTotals(all).plus) }) : t("poiFine"));
     $("helloText").textContent = msg;
     const mood = total === 0 ? "hi" : soon ? "worried" : "happy";
     if ($("helloPoi").dataset.mood !== mood && window.mascotSvg) { $("helloPoi").innerHTML = mascotSvg(mood); $("helloPoi").dataset.mood = mood; }
@@ -239,6 +256,7 @@
     $("sCount").textContent = nf().format(all.length);
     $("sPts").textContent = fmtPts(all.reduce((s, c) => s + (+c.pts || 0), 0));
     $("sSoon").textContent = nf().format(soon);
+    $("sMonth").textContent = "+" + fmtPts(monthTotals(all).plus);
     $("soonBanner").hidden = soon === 0 || $("sort").value === "expiry";
     $("soonText").textContent = t("soonBanner", { n: nf().format(soon) });
     paintHello(all, soon);
@@ -287,13 +305,44 @@
   function releaseWake() { try { wakeLock?.release(); } catch (e) {} wakeLock = null; }
   document.addEventListener("visibilitychange", () => { if (showingId && document.visibilityState === "visible") keepAwake(); });
 
-  function paintShow(c) {
-    $("showName").textContent = c.name;
-    $("showNum").textContent = c.num;
+  function paintSub(c) {
     const sub = [];
     if (c.pts) sub.push(fmtPts(c.pts) + " " + t("pts"));
     if (c.notes) sub.push(c.notes);
     $("showSub").textContent = sub.join(" · ");
+  }
+  let histAll = false;
+  function paintPoints(c) {
+    const hist = c.hist || [];
+    const m = monthTotals([c]);
+    $("ptsMonth").textContent = m.plus || m.minus ? t("ptsMonth", { plus: "+" + fmtPts(m.plus), minus: "−" + fmtPts(m.minus) }) : "";
+    const rows = histAll ? hist : hist.slice(0, 5);
+    $("ptsHist").innerHTML = rows.map(h => `<li><time datetime="${esc(new Date(h.at).toISOString())}">${esc(df().format(new Date(h.at)))}${h.k === "edit" ? " · " + esc(t("ptsEdited")) : ""}</time>
+      <span class="d ${h.d > 0 ? "up" : "down"}">${esc(signed(h.d))}</span><span class="bal">${esc(fmtPts(h.bal))}</span></li>`).join("");
+    $("ptsNone").hidden = hist.length > 0;
+    $("ptsMore").hidden = hist.length <= 5;
+    $("ptsMore").textContent = t(histAll ? "ptsLess" : "ptsMore");
+  }
+  function adjustPoints(kind) {
+    const c = cards().find(x => x.id === showingId); if (!c) return;
+    const amt = parseFloat(String($("ptsAmt").value).replace(",", "."));
+    if (!isFinite(amt) || amt <= 0) { toast(t("ptsErr")); $("ptsAmt").focus(); return; }
+    const before = +c.pts || 0;
+    const raw = kind === "spend" ? before - amt : before + amt;
+    const after = round2(Math.max(0, raw));
+    const prevHist = c.hist, prevUpdated = c.updated;
+    c.pts = after; logPoints(c, before, after); c.updated = Date.now(); c.sample = false;
+    save(); $("ptsAmt").value = ""; paintSub(c); paintPoints(c);
+    toast(raw < 0 ? t("ptsOver") : t("ptsSaved", { n: fmtPts(after) }), t("undo"), () => {
+      c.pts = before; c.hist = prevHist; c.updated = Math.max(Date.now(), (prevUpdated || 0) + 1); save();
+      if (showingId === c.id) { paintSub(c); paintPoints(c); }
+    });
+  }
+  function paintShow(c) {
+    $("showName").textContent = c.name;
+    $("showNum").textContent = c.num;
+    paintSub(c);
+    paintPoints(c);
     const { href, alt } = appHref(c);
     $("showApp").hidden = !href;
     if (href) { $("showApp").href = href; if (href.startsWith("intent:")) $("showApp").removeAttribute("target"); else $("showApp").target = "_blank"; }
@@ -309,7 +358,7 @@
   }
   function openShow(id) {
     const c = cards().find(x => x.id === id); if (!c) return;
-    showingId = id;
+    showingId = id; histAll = false; $("ptsAmt").value = "";
     c.used = (c.used || 0) + 1; c.lastUsed = Date.now(); save();
     paintShow(c);
     openOverlay("show", "showClose");
@@ -416,7 +465,9 @@
     const ptsRaw = parseFloat(String($("fPts").value).replace(",", "."));
     const data = { name, num, link: chosenAppId ? "" : link, appId: chosenAppId || "", fmt: num ? fmt : "none", cat: $("fCat").value, pts: isFinite(ptsRaw) && ptsRaw > 0 ? ptsRaw : 0, exp: $("fExp").value, notes: $("fNotes").value.trim(), fav: $("fFav").checked, color: chosenColor, updated: Date.now() };
     if (editingId) {
-      Object.assign(cards().find(x => x.id === editingId), data, { sample: false });
+      const cur = cards().find(x => x.id === editingId);
+      logPoints(cur, +cur.pts || 0, data.pts, "edit");
+      Object.assign(cur, data, { sample: false });
       toast(t("saved"));
     } else {
       state.cards = cards().filter(c => !c.sample);
@@ -560,6 +611,8 @@
           pts: +raw.pts > 0 ? +raw.pts : 0, exp: /^\d{4}-\d{2}-\d{2}$/.test(raw.exp || "") ? raw.exp : "",
           notes: String(raw.notes || "").slice(0, 120), link: cleanLink(raw.link) || "", appId: APPS.some(x => x.id === raw.appId) ? raw.appId : "", fav: !!raw.fav, color: /^#[0-9a-f]{6}$/i.test(raw.color || "") ? raw.color : COLORS[0],
           used: +raw.used || 0, lastUsed: +raw.lastUsed || 0, created: +raw.created || Date.now(), updated: +raw.updated || Date.now(),
+          hist: (Array.isArray(raw.hist) ? raw.hist : []).filter(h => h && isFinite(h.at) && isFinite(h.d) && isFinite(h.bal)).slice(0, HIST_MAX)
+            .map(h => ({ at: +h.at, d: round2(+h.d), bal: Math.max(0, round2(+h.bal)), ...(h.k === "edit" ? { k: "edit" } : {}) })),
           coupons: (raw.coupons || []).filter(k => k && typeof k.title === "string").slice(0, 200).map(k => ({
             id: typeof k.id === "string" ? k.id : uid(), title: k.title.slice(0, 60), detail: String(k.detail || "").slice(0, 120),
             exp: /^\d{4}-\d{2}-\d{2}$/.test(k.exp || "") ? k.exp : "", code: String(k.code || "").slice(0, 200),
@@ -820,6 +873,8 @@
     $("showClose").addEventListener("click", closeTop);
     $("showEdit").addEventListener("click", () => openForm(showingId));
     $("showNum").addEventListener("click", copyNumber);
+    $("ptsForm").addEventListener("submit", e => { e.preventDefault(); adjustPoints(e.submitter?.dataset.kind || "earn"); });
+    $("ptsMore").addEventListener("click", () => { histAll = !histAll; const c = cards().find(x => x.id === showingId); if (c) paintPoints(c); });
 
     $("form").addEventListener("submit", submitForm);
     $("fCancel").addEventListener("click", closeTop);
